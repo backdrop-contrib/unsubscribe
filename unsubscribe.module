@@ -1,0 +1,117 @@
+<?php
+
+/**
+* Implements hook_menu().
+*/
+function unsubscribe_menu() {
+  $items['unsubscribe'] = array(
+    'title' => 'Unsubscribe',
+    'description' => 'Unsubscribe from all email notifications',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('unsubscribe_unsubscribe_form'),
+    'access arguments' => array('unsubscribe'),
+    'file' => 'unsubscribe.pages.inc',
+    'access callback' => TRUE,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function unsubscribe_permission() {
+  return array(
+    'unsubscribe' => array(
+      'title' => t('Unsubscribe'), 
+      'description' => t('Unsubscribe from email communication.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function unsubscribe_form_alter(&$form, &$form_state, $form_id) {
+  switch($form_id) {
+    case 'user_profile_form':
+      $form['unsubscribe'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Unsubscribe from emails'),
+        '#description' => t('Checking this box will unsusbscribe you from all automated email communications.'),
+        '#default_value' => unsubscribe_user_check($form['#user']->uid),
+      );
+      $form['#submit'][] = 'unsubscribe_user_profile_form_submit';
+      break;
+  }
+}
+
+/**
+ * Callback for user_profile_form.
+ */
+function unsubscribe_user_profile_form_submit($form, &$form_state) {
+  // Unsubscribe user.
+  if ($form_state['values']['unsubscribe']) {
+    unsubscribe_user_add($form['#user']->uid);
+  }
+  // Resubscribe user.
+  else {
+    unsubscribe_user_remove($form['#user']->uid);
+  }
+}
+
+/**
+ * Implements hook_mail_alter().
+ */
+function unsubscribe_mail_alter(&$message) {
+  // Messages sent by these modules will not be aborted.
+  $exemptions = array('system', 'user');
+
+  // We rely on the 'account' parameter being set.
+  if (!in_array($message['module'], $exemptions) && !empty($message['params']['account'])) {
+    $account = $message['params']['account'];
+    // If this user is on the unsubscribe list, abort the email!
+    if (unsubscribe_user_check($account->uid)) {
+      $message['send'] = FALSE;
+    }
+  }
+}
+
+/**
+ * Implements hook_user_delete().
+ */
+function unsubscribe_user_delete($account) {
+  unsubscribe_user_remove($account->uid);
+}
+
+/**
+ * Check to see if a user is on the unsubscribe list.
+ *
+ */
+function unsubscribe_user_check($uid) {
+  $query = db_select('users', 'u');
+  $query->condition('u.uid', (int)$uid);
+  $query->leftJoin('unsubscribe', 'us', 'u.uid = us.uid');
+  $query->addExpression("COUNT(us.uid)", 'uid_count');
+  $result = $query->execute()->fetchField();
+
+  return $result;
+}
+
+/**
+ * Add user to unsubscribe list.
+ */
+function unsubscribe_user_add($uid) {
+  db_insert('unsubscribe')
+  ->fields(array(
+    'uid' => (int)$uid,
+    'timestamp' => REQUEST_TIME,
+  ))
+  ->execute();
+}
+
+/**
+ * Remove user from unsubscribe list.
+ */
+function unsubscribe_user_remove($uid) {
+  db_delete('unsubscribe')->condition('uid', (int)$uid)->execute();
+}
