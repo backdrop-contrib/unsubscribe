@@ -9,7 +9,7 @@ function unsubscribe_menu() {
     'description' => 'Unsubscribe from all email notifications',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('unsubscribe_unsubscribe_form'),
-    'access arguments' => array('unsubscribe'),
+    'access arguments' => array('unsubscribe add'),
     'file' => 'unsubscribe.pages.inc',
     'access callback' => TRUE,
   );
@@ -21,7 +21,11 @@ function unsubscribe_menu() {
  */
 function unsubscribe_permission() {
   return array(
-    'unsubscribe' => array(
+    'unsubscribe add' => array(
+      'title' => t('Unsubscribe'), 
+      'description' => t('Unsubscribe from email communication.'),
+    ),
+    'unsubscribe remove' => array(
       'title' => t('Unsubscribe'), 
       'description' => t('Unsubscribe from email communication.'),
     ),
@@ -38,7 +42,7 @@ function unsubscribe_form_alter(&$form, &$form_state, $form_id) {
         '#type' => 'checkbox',
         '#title' => t('Unsubscribe from emails'),
         '#description' => t('Checking this box will unsusbscribe you from all automated email communications.'),
-        '#default_value' => unsubscribe_user_check($form['#user']->uid),
+        '#default_value' => unsubscribe_user_check($form['#user']),
       );
       $form['#submit'][] = 'unsubscribe_user_profile_form_submit';
       break;
@@ -51,11 +55,11 @@ function unsubscribe_form_alter(&$form, &$form_state, $form_id) {
 function unsubscribe_user_profile_form_submit($form, &$form_state) {
   // Unsubscribe user.
   if ($form_state['values']['unsubscribe']) {
-    unsubscribe_user_add($form['#user']->uid);
+    unsubscribe_user_add($form['#user']);
   }
   // Resubscribe user.
   else {
-    unsubscribe_user_remove($form['#user']->uid);
+    unsubscribe_user_remove($form['#user']);
   }
 }
 
@@ -63,14 +67,23 @@ function unsubscribe_user_profile_form_submit($form, &$form_state) {
  * Implements hook_mail_alter().
  */
 function unsubscribe_mail_alter(&$message) {
+  static $exemptions, $block;
+  
   // Messages sent by these modules will not be aborted.
   $exemptions = array('system', 'user');
+  $block = TRUE;
+
+  // Since module_invoke_all() does not allow variables to be passed by reference, we use this.
+  foreach (module_implements('unsubscribe_mail_block') as $module) {
+    $function = $module . '_unsubscribe_mail_block';
+    $function($message, $exemptions, $block);
+  }
 
   // We rely on the 'account' parameter being set.
   if (!in_array($message['module'], $exemptions) && !empty($message['params']['account'])) {
     $account = $message['params']['account'];
     // If this user is on the unsubscribe list, abort the email!
-    if (unsubscribe_user_check($account->uid)) {
+    if (unsubscribe_user_check($account)) {
       $message['send'] = FALSE;
     }
   }
@@ -80,16 +93,108 @@ function unsubscribe_mail_alter(&$message) {
  * Implements hook_user_delete().
  */
 function unsubscribe_user_delete($account) {
-  unsubscribe_user_remove($account->uid);
+  unsubscribe_user_remove($account);
+}
+
+/**
+ * Implements hook_user_operations().
+ */
+function unsubscribe_user_operations() {
+  $operations = array(
+    'unsubscribe_user_add' => array(
+      'label' => t('Add to unsubscribe list'), 
+      'callback' => 'unsubscribe_user_bulk_add_remove',
+      'callback arguments' => array('add'),
+    ), 
+    'unsubscribe_user_remove' => array(
+      'label' => t('Remove from unsubscribe list'), 
+      'callback' => 'unsubscribe_user_bulk_add_remove',
+      'callback arguments' => array('remove'),
+    ),
+  );
+  return $operations;
+}
+
+/**
+ * Bulk add users to unsubscribe list. Used by unsubscribe_user_operations().
+ *
+ * @param $account
+ *   An array of user IDs.
+ * @return
+ *   Multidimensional array of return data including user IDs and responses.
+ */
+function unsubscribe_user_bulk_add_remove($accounts, $action) {
+  $return = array();
+  foreach ($accounts as $uid) {
+    $account = user_load((int)$uid);
+    if ($account !== FALSE) {
+      $return[] = array(
+        'uid' => $uid,
+        'response' => $action == 'add' ? unsubscribe_user_add($account) : unsubscribe_user_remove($account),
+      );
+    }
+    else {
+      drupal_set_message(t('There was a problem loading account %uid', array('%uid' => $uid)));
+    }
+  }
+  return $return;
+}
+
+/**
+ * Implements hook_action_info().
+ */
+function unsubscribe_action_info() {
+  return array(
+    'unsubscribe_user_add_action' => array(
+      'label' => t('Add to unsubscribe list'),
+      'type' => 'user',
+      'configurable' => FALSE,
+      'triggers' => array('any'),
+    ),
+    'unsubscribe_user_remove_action' => array(
+      'label' => t('Remove from unsubscribe list'),
+      'type' => 'user',
+      'configurable' => FALSE,
+      'triggers' => array('any'),
+    ),
+  );
+}
+
+/**
+ * Action function for unsubscribe_add_action.
+ *
+ * @param $entity
+ *   The user object being acted upon.
+ * @param $context
+ *   Array with parameters for this action: depends on the trigger.
+ */
+function unsubscribe_user_add_action(&$account, $context = array()) {
+  unsubscribe_user_add($account); 
+}
+
+/**
+ * Action function for unsubscribe_remove_action.
+ *
+ * @param $entity
+ *   The user object being acted upon.
+ * @param $context
+ *   Array with parameters for this action: depends on the trigger.
+ */
+function unsubscribe_user_remove_action(&$account, $context = array()) {
+  unsubscribe_user_remove($account); 
 }
 
 /**
  * Check to see if a user is on the unsubscribe list.
  *
  */
-function unsubscribe_user_check($uid) {
+function unsubscribe_user_check($account) {
+  if (!is_object($account)) {
+    user_load($account);
+  }
+
   $query = db_select('users', 'u');
-  $query->condition('u.uid', (int)$uid);
+  $query->condition('u.uid', $account->uid);
   $query->leftJoin('unsubscribe', 'us', 'u.uid = us.uid');
   $query->addExpression("COUNT(us.uid)", 'uid_count');
   $result = $query->execute()->fetchField();
@@ -100,18 +205,40 @@ function unsubscribe_user_check($uid) {
 /**
  * Add user to unsubscribe list.
  */
-function unsubscribe_user_add($uid) {
-  db_insert('unsubscribe')
-  ->fields(array(
-    'uid' => (int)$uid,
-    'timestamp' => REQUEST_TIME,
-  ))
-  ->execute();
+function unsubscribe_user_add($account) {
+  if (!is_object($account)) {
+    user_load($account);
+  }
+
+  // I don't like adding this check here, but the check should be done in a central place.
+  if (!unsubscribe_user_check($account)) {
+
+    // Integrate with the rules module, see unsubscribe.rules.inc.
+    if (module_exists('rules')) {
+      rules_invoke_event('unsubscribe_user_added', $account);
+    }
+
+    // Down to business.
+    db_insert('unsubscribe')
+    ->fields(array(
+      'uid' => $account->uid,
+      'timestamp' => REQUEST_TIME,
+    ))
+    ->execute();
+  }
 }
 
 /**
  * Remove user from unsubscribe list.
  */
-function unsubscribe_user_remove($uid) {
-  db_delete('unsubscribe')->condition('uid', (int)$uid)->execute();
+function unsubscribe_user_remove($account) {
+  if (!is_object($account)) {
+    user_load($account);
+  }
+
+  // Integrate with the rules module, see unsubscribe.rules.inc.
+  if (module_exists('rules')) {
+    rules_invoke_event('unsubscribe_user_removed', $account->uid);
+  }
+  db_delete('unsubscribe')->condition('uid', $account->uid)->execute();
 }
