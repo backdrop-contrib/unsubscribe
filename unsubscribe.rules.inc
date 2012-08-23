@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Provide rules integration for unsubscribe module.
+ */
+
+/**
  * Implements hook_rules_event_info().
  *
  * @ingroup rules

@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Install, update, and uninstall functions for the unsubscribe module.
+ */
+
+/**
  * Implements hook_schema().
  */
 function unsubscribe_schema() {

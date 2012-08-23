@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * Provide basic functions for unsubscribing from email communications.
+ */
+
+/**
 * Implements hook_menu().
 */
 function unsubscribe_menu() {
@@ -71,13 +76,9 @@ function unsubscribe_mail_alter(&$message) {
   
   // Messages sent by these modules will not be aborted.
   $exemptions = array('system', 'user');
-  $block = TRUE;
 
-  // Since module_invoke_all() does not allow variables to be passed by reference, we use this.
-  foreach (module_implements('unsubscribe_mail_block') as $module) {
-    $function = $module . '_unsubscribe_mail_block';
-    $function($message, $exemptions, $block);
-  }
+  // Allow for $exemptions array to be altered by other modules.
+  drupal_alter('unsubscribe_exemptions', $exemptions);
 
   // We rely on the 'account' parameter being set.
   if (!in_array($message['module'], $exemptions) && !empty($message['params']['account'])) {
@@ -87,6 +88,13 @@ function unsubscribe_mail_alter(&$message) {
       $message['send'] = FALSE;
     }
   }
+
+  // Since module_invoke_all() does not allow variables to be passed by reference, we use this.
+  foreach (module_implements('unsubscribe_override') as $module) {
+    $function = $module . '_unsubscribe_override';
+    $function($message);
+  }
+
 }
 
 /**
