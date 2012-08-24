@@ -38,6 +38,16 @@ function unsubscribe_permission() {
 }
 
 /**
+ * Implements hook_views_api().
+ */
+function unsubscribe_views_api() {
+  return array(
+    'api' => 3,
+    'path' => drupal_get_path('module', 'unsubscribe'),
+  );
+}
+
+/**
  * Implements hook_form_alter().
  */
 function unsubscribe_form_alter(&$form, &$form_state, $form_id) {
