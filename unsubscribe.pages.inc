@@ -5,6 +5,25 @@
  */
 
 /**
+ * Form callback for unsubscribe settings page.
+ */
+function unsubscribe_settings_form($form, &$form_state) {
+  $form['exemptions'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Module Exemptions'),
+    '#description' => t("These modules will be exempt from the unsubscribe module's blocking mechanism. Emails sent by select modules will still be sent to unsubscribed users."),
+  );
+  $form['exemptions']['unsubscribe_exempt_modules'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Exempt modules'),
+    '#options' => drupal_map_assoc(module_implements('mail')),
+    '#default_value' => variable_get('unsubscribe_exempt_modules', drupal_map_assoc(array('system', 'user'))),
+    '#description' => t('Developers: you can programatically alter this list using hook_unsubscribe_exemptions_alter().'),
+  );
+  return system_settings_form($form);
+}
+
+/**
  * Form callback for unsubscribe form.
  */
 function unsubscribe_unsubscribe_form($form, &$form_state) {

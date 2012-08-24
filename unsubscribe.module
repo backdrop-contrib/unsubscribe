@@ -1,12 +1,13 @@
 <?php
+
 /**
  * @file
  * Provide basic functions for unsubscribing from email communications.
  */
 
 /**
-* Implements hook_menu().
-*/
+ * Implements hook_menu().
+ */
 function unsubscribe_menu() {
   $items['unsubscribe'] = array(
     'title' => 'Unsubscribe',
@@ -17,6 +18,14 @@ function unsubscribe_menu() {
     'file' => 'unsubscribe.pages.inc',
     'access callback' => TRUE,
   );
+  $items['admin/config/people/unsubscribe'] = array(
+    'title' => 'Unsubscribe',
+    'description' => 'Configure settings for the unsubscribe module.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('unsubscribe_settings_form'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'unsubscribe.pages.inc',
+  );
   return $items;
 }
 
@@ -26,11 +35,11 @@ function unsubscribe_menu() {
 function unsubscribe_permission() {
   return array(
     'unsubscribe add' => array(
-      'title' => t('Unsubscribe'), 
+      'title' => t('Unsubscribe'),
       'description' => t('Unsubscribe from email communication.'),
     ),
     'unsubscribe remove' => array(
-      'title' => t('Unsubscribe'), 
+      'title' => t('Unsubscribe'),
       'description' => t('Unsubscribe from email communication.'),
     ),
   );
@@ -50,7 +59,7 @@ function unsubscribe_views_api() {
  * Implements hook_form_alter().
  */
 function unsubscribe_form_alter(&$form, &$form_state, $form_id) {
-  switch($form_id) {
+  switch ($form_id) {
     case 'user_profile_form':
       $form['unsubscribe'] = array(
         '#type' => 'checkbox',
@@ -82,9 +91,9 @@ function unsubscribe_user_profile_form_submit($form, &$form_state) {
  */
 function unsubscribe_mail_alter(&$message) {
   static $exemptions, $block;
-  
+
   // Messages sent by these modules will not be aborted.
-  $exemptions = array('system', 'user');
+  $exemptions = array_filter(variable_get('unsubscribe_exempt_modules', drupal_map_assoc(array('system', 'user'))), 'is_string');
 
   // Allow for $exemptions array to be altered by other modules.
   drupal_alter('unsubscribe_exemptions', $exemptions);
@@ -103,7 +112,6 @@ function unsubscribe_mail_alter(&$message) {
     $function = $module . '_unsubscribe_override';
     $function($message);
   }
-
 }
 
 /**
@@ -119,12 +127,12 @@ function unsubscribe_user_delete($account) {
 function unsubscribe_user_operations() {
   $operations = array(
     'unsubscribe_user_add' => array(
-      'label' => t('Add to unsubscribe list'), 
+      'label' => t('Add to unsubscribe list'),
       'callback' => 'unsubscribe_user_bulk_add_remove',
       'callback arguments' => array('add'),
-    ), 
+    ),
     'unsubscribe_user_remove' => array(
-      'label' => t('Remove from unsubscribe list'), 
+      'label' => t('Remove from unsubscribe list'),
       'callback' => 'unsubscribe_user_bulk_add_remove',
       'callback arguments' => array('remove'),
     ),
@@ -137,6 +145,7 @@ function unsubscribe_user_operations() {
  *
  * @param $account
  *   An array of user IDs.
+ *
  * @return
  *   Multidimensional array of return data including user IDs and responses.
  */
@@ -186,7 +195,7 @@ function unsubscribe_action_info() {
  *   Array with parameters for this action: depends on the trigger.
  */
 function unsubscribe_user_add_action(&$account, $context = array()) {
-  unsubscribe_user_add($account); 
+  unsubscribe_user_add($account);
 }
 
 /**
@@ -198,7 +207,7 @@ function unsubscribe_user_add_action(&$account, $context = array()) {
  *   Array with parameters for this action: depends on the trigger.
  */
 function unsubscribe_user_remove_action(&$account, $context = array()) {
-  unsubscribe_user_remove($account); 
+  unsubscribe_user_remove($account);
 }
 
 /**
@@ -236,12 +245,10 @@ function unsubscribe_user_add($account) {
     }
 
     // Down to business.
-    db_insert('unsubscribe')
-    ->fields(array(
-      'uid' => $account->uid,
-      'timestamp' => REQUEST_TIME,
-    ))
-    ->execute();
+    db_insert('unsubscribe')->fields(array(
+        'uid' => $account->uid,
+        'timestamp' => REQUEST_TIME,
+      ))->execute();
   }
 }
 
@@ -259,3 +266,4 @@ function unsubscribe_user_remove($account) {
   }
   db_delete('unsubscribe')->condition('uid', $account->uid)->execute();
 }
+
