@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Defines form and page callbacks for unsubscribe module.

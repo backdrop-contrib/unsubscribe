@@ -1,9 +1,14 @@
 <?php
 /**
+ * @file
+ * Provide views data and handlers for unsubscribe.module
+ */
+
+/**
  * Implements hook_views_data().
  */
 function unsubscribe_views_data() {
-  $data['unsubscribe']['table']['group']  = t('Unsubscribe');
+  $data['unsubscribe']['table']['group'] = t('Unsubscribe');
   $data['unsubscribe']['table']['base'] = array(
     'field' => 'uid',
     'title' => t('Unsubscribe List'),
@@ -45,5 +50,7 @@ function unsubscribe_views_data() {
       'handler' => 'views_handler_filter_date',
     ),
   );
+
   return $data;
 }
+

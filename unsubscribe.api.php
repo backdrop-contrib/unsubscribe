@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * This file contains API documentation for the unsubscribe module. Note that

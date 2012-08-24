@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Provide basic functions for unsubscribing from email communications.

@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Provide rules integration for unsubscribe module.
