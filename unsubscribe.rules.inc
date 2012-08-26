@@ -36,6 +36,7 @@ function unsubscribe_rules_event_info() {
 
 /**
  * Implementation of hook_rules_action_info().
+ *
  * @ingroup rules
  */
 function unsubscribe_rules_action_info() {

@@ -239,16 +239,19 @@ function unsubscribe_user_add($account) {
   // I don't like adding this check here, but the check should be done in a central place.
   if (!unsubscribe_user_check($account)) {
 
-    // Integrate with the rules module, see unsubscribe.rules.inc.
-    if (module_exists('rules')) {
-      rules_invoke_event('unsubscribe_user_added', $account);
-    }
-
     // Down to business.
     db_insert('unsubscribe')->fields(array(
         'uid' => $account->uid,
         'timestamp' => REQUEST_TIME,
       ))->execute();
+
+    // Integrate with the rules module, see unsubscribe.rules.inc.
+    if (module_exists('rules')) {
+      rules_invoke_event('unsubscribe_user_added', $account);
+    }
+
+    // Allow modules to respond to this event.
+    module_invoke_all('unsubscribe', $account, 'add');
   }
 }
 
@@ -265,5 +268,7 @@ function unsubscribe_user_remove($account) {
     rules_invoke_event('unsubscribe_user_removed', $account->uid);
   }
   db_delete('unsubscribe')->condition('uid', $account->uid)->execute();
-}
 
+  // Allow modules to respond to this event.
+  module_invoke_all('unsubscribe', $account, 'remove');
+}
