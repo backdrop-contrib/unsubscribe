@@ -8,6 +8,11 @@
  * Form callback for unsubscribe settings page.
  */
 function unsubscribe_settings_form($form, &$form_state) {
+  $form['unsubscribe_append'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Append unsubscribe link to all outgoing emails'),
+    '#default_value' => variable_get('unsubscribe_append', 1),
+  );
   $form['exemptions'] = array(
     '#type' => 'fieldset',
     '#title' => t('Module Exemptions'),
@@ -30,7 +35,7 @@ function unsubscribe_unsubscribe_form($form, &$form_state) {
   $form['mail'] = array(
     '#type' => 'textfield',
     '#title' => t('Your email address'),
-    '#default_value' => !empty($_GET['email']) ? $_GET['email'] : '',
+    '#default_value' => !empty($_GET['mail']) ? $_GET['mail'] : '',
     '#required' => TRUE,
   );
   $form['submit'] = array(

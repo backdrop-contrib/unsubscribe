@@ -56,6 +56,49 @@ function unsubscribe_views_api() {
 }
 
 /**
+ * Implements hook_token_info().
+ */
+function unsubscribe_token_info() {
+  $info['tokens']['user']['unsubscribe'] = array(
+    'name' => t('Unsubscribe Link'),
+    'description' => t("A link to the unsubscribe form, prepopulated with user's email address."),
+  );
+  $info['tokens']['user']['unsubscribe-url'] = array(
+    'name' => t('Unsubscribe URL'),
+    'description' => t("The URL for the unsubscribe form, prepopulated with user's email address."),
+  );
+  return $info;
+}
+
+/**
+ * Implements hook_tokens().
+ */
+function unsubscribe_tokens($type, $tokens, array $data = array(), array $options = array()) {
+  $replacements = array();
+  $sanitize = !empty($options['sanitize']);
+
+  // User tokens.
+  if ($type == 'user' && !empty($data['user'])) {
+    $account = $data['user'];
+
+    foreach ($tokens as $name => $original) {
+      switch ($name) {
+        case 'unsubscribe':
+          $link = unsubscribe_get_link($account);
+          $replacements[$original] = $sanitize ? filter_xss($link) : $link;
+          break;
+        case 'unsubscribe-url':
+          $url = unsubscribe_get_link($account, TRUE);
+          $replacements[$original] = $sanitize ? filter_xss($url) : $url;
+          break;
+      }
+    }
+  }
+
+  return $replacements;
+}
+
+/**
  * Implements hook_form_alter().
  */
 function unsubscribe_form_alter(&$form, &$form_state, $form_id) {
@@ -92,26 +135,67 @@ function unsubscribe_user_profile_form_submit($form, &$form_state) {
 function unsubscribe_mail_alter(&$message) {
   static $exemptions, $block;
 
-  // Messages sent by these modules will not be aborted.
-  $exemptions = array_filter(variable_get('unsubscribe_exempt_modules', drupal_map_assoc(array('system', 'user'))), 'is_string');
-
-  // Allow for $exemptions array to be altered by other modules.
-  drupal_alter('unsubscribe_exemptions', $exemptions);
-
-  // We rely on the 'account' parameter being set.
-  if (!in_array($message['module'], $exemptions) && !empty($message['params']['account'])) {
+  // We rely on the account parameter being set. Maybe there should be a
+  // fallback that checks via user_load_by_mail($message['to'])?
+  if (!empty($message['params']['account'])) {
     $account = $message['params']['account'];
-    // If this user is on the unsubscribe list, abort the email!
-    if (unsubscribe_user_check($account)) {
-      $message['send'] = FALSE;
+
+    // Messages sent by these modules will not be aborted.
+    $exemptions = array_filter(variable_get('unsubscribe_exempt_modules', drupal_map_assoc(array('system', 'user'))), 'is_string');
+
+    // Allow for $exemptions array to be altered by other modules.
+    drupal_alter('unsubscribe_exemptions', $exemptions);
+
+    if (!in_array($message['module'], $exemptions)) {
+      // If this user is on the unsubscribe list, abort the email!
+      if (unsubscribe_user_check($account)) {
+        $message['send'] = FALSE;
+      }
+    }
+
+    // Since module_invoke_all() does not allow variables to be passed by reference, we use this.
+    foreach (module_implements('unsubscribe_override') as $module) {
+      $function = $module . '_unsubscribe_override';
+      $function($message);
+    }
+
+    // Store an unsubscribe link in $message for later theming use.
+    $unsubscribe_link = unsubscribe_get_link($account);
+    $message['unsubscribe'] = $unsubscribe_link;
+
+    // Append unsubscribe link to email.
+    if (variable_get('unsubscribe_append', 1)) {
+      $message['body']['unsubscribe'] = $unsubscribe_link;
     }
   }
+}
 
-  // Since module_invoke_all() does not allow variables to be passed by reference, we use this.
-  foreach (module_implements('unsubscribe_override') as $module) {
-    $function = $module . '_unsubscribe_override';
-    $function($message);
+/**
+ * Generates unsubscribe link.
+ *
+ * @param object $account
+ *  (optional) User account object. Will be used to prepopulate mail field.
+ *
+ * @param bool $url
+ *  (optional) Determines whether a URL or link will be returned.
+ *
+ * @return string
+ *   Will return either a URL or link for the unsubscribe form.
+ */
+function unsubscribe_get_link($account = NULL, $url = FALSE) {
+  $options = array(
+    'attributes' => array(
+      'class' => array('unsubscribe-link'),
+    ),
+    'absolute' => TRUE,
+  );
+
+  // Prepopulate mail field on unsubscribe form.
+  if ($account) {
+    $options['query'] = array('mail' => $account->mail);
   }
+
+  return $url ? url('unsubscribe', $options) : l('Unsubscribe', 'unsubscribe', $options);
 }
 
 /**
