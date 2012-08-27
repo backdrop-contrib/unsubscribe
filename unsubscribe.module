@@ -46,6 +46,20 @@ function unsubscribe_permission() {
 }
 
 /**
+ * Implements hook_theme().
+ */
+function unsubscribe_theme() {
+  return array(
+    'unsubscribe' => array(
+      'variables' => array(
+        'account' => NULL,
+        'url' => NULL,
+      ),
+    ),
+  );
+}
+
+/**
  * Implements hook_views_api().
  */
 function unsubscribe_views_api() {
@@ -84,11 +98,11 @@ function unsubscribe_tokens($type, $tokens, array $data = array(), array $option
     foreach ($tokens as $name => $original) {
       switch ($name) {
         case 'unsubscribe':
-          $link = unsubscribe_get_link($account);
+          $link = theme('unsubscribe', array('account' => $account));
           $replacements[$original] = $sanitize ? filter_xss($link) : $link;
           break;
         case 'unsubscribe-url':
-          $url = unsubscribe_get_link($account, TRUE);
+          $url = theme('unsubscribe', array('account' => $account, 'url' => TRUE));
           $replacements[$original] = $sanitize ? filter_xss($url) : $url;
           break;
       }
@@ -160,7 +174,7 @@ function unsubscribe_mail_alter(&$message) {
     }
 
     // Store an unsubscribe link in $message for later theming use.
-    $unsubscribe_link = unsubscribe_get_link($account);
+    $unsubscribe_link = theme('unsubscribe', array('account' => $account));
     $message['unsubscribe'] = $unsubscribe_link;
 
     // Append unsubscribe link to email.
@@ -171,18 +185,19 @@ function unsubscribe_mail_alter(&$message) {
 }
 
 /**
- * Generates unsubscribe link.
+ * Theme callback that generates unsubscribe link or url.
  *
- * @param object $account
- *  (optional) User account object. Will be used to prepopulate mail field.
- *
- * @param bool $url
- *  (optional) Determines whether a URL or link will be returned.
+ * @param $vars
+ *   An associative array containing:
+ *   - account: User account object. Will be used to prepopulate mail field.
+ *   - url: TRUE will return URL, FALSE will return link.
  *
  * @return string
  *   Will return either a URL or link for the unsubscribe form.
+ *
+ * @ingroup themeable
  */
-function unsubscribe_get_link($account = NULL, $url = FALSE) {
+function theme_unsubscribe($vars) {
   $options = array(
     'attributes' => array(
       'class' => array('unsubscribe-link'),
@@ -191,11 +206,11 @@ function unsubscribe_get_link($account = NULL, $url = FALSE) {
   );
 
   // Prepopulate mail field on unsubscribe form.
-  if ($account) {
-    $options['query'] = array('mail' => $account->mail);
+  if (!empty($vars['account'])) {
+    $options['query'] = array('mail' => $vars['account']->mail);
   }
 
-  return $url ? url('unsubscribe', $options) : l('Unsubscribe', 'unsubscribe', $options);
+  return $vars['url'] ? url('unsubscribe', $options) : l('Unsubscribe', 'unsubscribe', $options);
 }
 
 /**
