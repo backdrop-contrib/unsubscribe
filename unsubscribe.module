@@ -14,9 +14,8 @@ function unsubscribe_menu() {
     'description' => 'Unsubscribe from all email notifications',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('unsubscribe_unsubscribe_form'),
-    'access arguments' => array('unsubscribe add'),
+    'access arguments' => array('unsubscribe'),
     'file' => 'unsubscribe.pages.inc',
-    'access callback' => TRUE,
   );
   $items['admin/config/people/unsubscribe'] = array(
     'title' => 'Unsubscribe',
@@ -31,16 +30,17 @@ function unsubscribe_menu() {
 
 /**
  * Implements hook_permission().
+ *
+ * Currently, anyone with the 'unsubscribe' permission could unsubscribe
+ * any user.
+ *
+ * @todo Add permissions for 'unsubscribe self' and 'unsubscribe other.'
  */
 function unsubscribe_permission() {
   return array(
-    'unsubscribe add' => array(
-      'title' => t('Unsubscribe'),
-      'description' => t('Unsubscribe from email communication.'),
-    ),
-    'unsubscribe remove' => array(
-      'title' => t('Unsubscribe'),
-      'description' => t('Unsubscribe from email communication.'),
+    'unsubscribe' => array(
+      'title' => t('Unsubscribe any user account'),
+      'description' => t('Unsubscribe user accounts from email communication.'),
     ),
   );
 }
@@ -87,7 +87,7 @@ function unsubscribe_token_info() {
 /**
  * Implements hook_tokens().
  */
-function unsubscribe_tokens($type, $tokens, array $data = array(), array $options = array()) {
+function unsubscribe_tokens($type, $tokens, array$data = array(), array$options = array()) {
   $replacements = array();
   $sanitize = !empty($options['sanitize']);
 
@@ -101,6 +101,7 @@ function unsubscribe_tokens($type, $tokens, array $data = array(), array $option
           $link = theme('unsubscribe', array('account' => $account));
           $replacements[$original] = $sanitize ? filter_xss($link) : $link;
           break;
+
         case 'unsubscribe-url':
           $url = theme('unsubscribe', array('account' => $account, 'url' => TRUE));
           $replacements[$original] = $sanitize ? filter_xss($url) : $url;
@@ -167,6 +168,7 @@ function unsubscribe_mail_alter(&$message) {
       }
     }
 
+    // @see hook_unsubscribe_override() in unsubscribe.api.php.
     // Since module_invoke_all() does not allow variables to be passed by reference, we use this.
     foreach (module_implements('unsubscribe_override') as $module) {
       $function = $module . '_unsubscribe_override';
@@ -371,3 +373,4 @@ function unsubscribe_user_remove($account) {
   // Allow modules to respond to this event.
   module_invoke_all('unsubscribe', $account, 'remove');
 }
+
