@@ -171,7 +171,7 @@ function unsubscribe_mail_alter(&$message) {
       }
     }
 
-    // @see hook_unsubscribe_override() in unsubscribe.api.php.
+    // @see hook_unsubscribe_override()
     // Since module_invoke_all() does not allow variables to be passed by
     // reference, we use this loop.
     foreach (module_implements('unsubscribe_override') as $module) {

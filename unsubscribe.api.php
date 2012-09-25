@@ -11,6 +11,8 @@
  *
  * @param array $exemptions
  *   A single-dimensional array comprised of module machine-names.
+ *
+ * @ingroup hooks
  */
 function hook_unsubscribe_exemptions_alter(&$exemptions) {
   // Add new exception for custom_module.
@@ -24,12 +26,14 @@ function hook_unsubscribe_exemptions_alter(&$exemptions) {
  * Allows modules to override unsubscribe's blocking function.
  *
  * You might ask "Why would I need this? I can just implement hook_mail_alter()
- * to modify $message." Well, this hook is always called AFTER exemptions have 
+ * to modify $message." Well, this hook is always called AFTER exemptions have
  * been checked, and unsubscribe has done its work. This means that you don't
  * need to worry about module weights. Maybe it should be ditched?
  *
  * @param array $message
  *   An associative array containing the message to be sent.
+ *
+ * @ingroup hooks
  */
 function hook_unsubscribe_override(&$message) {
   // Exempt any mail sent by user 0.

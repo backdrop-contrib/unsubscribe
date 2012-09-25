@@ -5,7 +5,7 @@
  */
 
 /**
- * Form callback for unsubscribe settings page.
+ * Form constructor for unsubscribe settings page.
  */
 function unsubscribe_settings_form($form, &$form_state) {
   $form['unsubscribe_append'] = array(
@@ -29,7 +29,7 @@ function unsubscribe_settings_form($form, &$form_state) {
 }
 
 /**
- * Form callback for unsubscribe form.
+ * Form constructor for unsubscribe form.
  */
 function unsubscribe_unsubscribe_form($form, &$form_state) {
   $form['mail'] = array(
@@ -47,11 +47,11 @@ function unsubscribe_unsubscribe_form($form, &$form_state) {
 }
 
 /**
- * Form validation callback for unsubscribe form.
+ * Form validation handler for unsubscribe_unsubscribe_form().
  */
 function unsubscribe_unsubscribe_form_validate($form, &$form_state) {
   $mail = $form_state['values']['mail'];
-  
+
   // Validate email address.
   if (!valid_email_address($mail)) {
     form_set_error('mail', t('The e-mail address you specified is not valid.'));
@@ -71,7 +71,7 @@ function unsubscribe_unsubscribe_form_validate($form, &$form_state) {
 }
 
 /**
- * Form submit callback for unsubscribe form.
+ * Form submission handler for unsubscribe_unsubscribe_form().
  */
 function unsubscribe_unsubscribe_form_submit($form, &$form_state) {
   $account = user_load_by_mail($mail);
