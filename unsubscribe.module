@@ -136,11 +136,11 @@ function unsubscribe_form_alter(&$form, &$form_state, $form_id) {
  * Callback for user_profile_form.
  */
 function unsubscribe_user_profile_form_submit($form, &$form_state) {
-  // Unsubscribe user.
+  // Add user to unsubscribe list.
   if ($form_state['values']['unsubscribe']) {
     unsubscribe_user_add($form['#user']);
   }
-  // Resubscribe user.
+  // Remove user from unsubscribe list.
   else {
     unsubscribe_user_remove($form['#user']);
   }
@@ -163,6 +163,7 @@ function unsubscribe_mail_alter(&$message) {
     // Allow for $exemptions array to be altered by other modules.
     drupal_alter('unsubscribe_exemptions', $exemptions);
 
+    // For non-exempt modules.
     if (!in_array($message['module'], $exemptions)) {
       // If this user is on the unsubscribe list, abort the email!
       if (unsubscribe_user_check($account)) {
@@ -171,7 +172,8 @@ function unsubscribe_mail_alter(&$message) {
     }
 
     // @see hook_unsubscribe_override() in unsubscribe.api.php.
-    // Since module_invoke_all() does not allow variables to be passed by reference, we use this.
+    // Since module_invoke_all() does not allow variables to be passed by
+    // reference, we use this loop.
     foreach (module_implements('unsubscribe_override') as $module) {
       $function = $module . '_unsubscribe_override';
       $function($message);
@@ -214,13 +216,14 @@ function theme_unsubscribe($vars) {
     $options['query'] = array('mail' => $vars['account']->mail);
   }
 
-  return $vars['url'] ? url('unsubscribe', $options) : l('Unsubscribe', 'unsubscribe', $options);
+  return $vars['url'] ? url('unsubscribe', $options) : l(t('Unsubscribe'), 'unsubscribe', $options);
 }
 
 /**
  * Implements hook_user_delete().
  */
 function unsubscribe_user_delete($account) {
+  // If a user has been deleted, remove them from the unsubscribe list.
   unsubscribe_user_remove($account);
 }
 
@@ -321,7 +324,7 @@ function unsubscribe_user_remove_action(&$account, $context = array()) {
  */
 function unsubscribe_user_check($account) {
   if (!is_object($account)) {
-    user_load($account);
+    $account = user_load($account);
   }
 
   $query = db_select('users', 'u');
@@ -338,7 +341,7 @@ function unsubscribe_user_check($account) {
  */
 function unsubscribe_user_add($account) {
   if (!is_object($account)) {
-    user_load($account);
+    $account = user_load($account);
   }
 
   // I don't like adding this check here, but the check should be done in a central place.
@@ -365,7 +368,7 @@ function unsubscribe_user_add($account) {
  */
 function unsubscribe_user_remove($account) {
   if (!is_object($account)) {
-    user_load($account);
+    $account = user_load($account);
   }
 
   // Integrate with the rules module, see unsubscribe.rules.inc.
