@@ -50,6 +50,8 @@ function unsubscribe_views_data() {
       'handler' => 'views_handler_filter_date',
     ),
   );
+  
+  // @todo Add handlers for 'remove from list' and 'add to list' links.
 
   return $data;
 }

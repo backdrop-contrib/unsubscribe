@@ -35,6 +35,7 @@ function unsubscribe_unsubscribe_form($form, &$form_state) {
   $form['mail'] = array(
     '#type' => 'textfield',
     '#title' => t('Your email address'),
+    '#description' => t('Enter your email address to unsubscribe from email communications.'),
     '#default_value' => !empty($_GET['mail']) ? $_GET['mail'] : '',
     '#required' => TRUE,
   );
