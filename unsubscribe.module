@@ -32,7 +32,7 @@ function unsubscribe_menu() {
  * Implements hook_permission().
  *
  * Currently, anyone with the 'unsubscribe' permission could unsubscribe
- * any user.
+ * any user via the unsubscribe_unsubscribe_form form.
  *
  * @todo Add permissions for 'unsubscribe self' and 'unsubscribe other.'
  */
@@ -40,7 +40,7 @@ function unsubscribe_permission() {
   return array(
     'unsubscribe' => array(
       'title' => t('Unsubscribe any user account'),
-      'description' => t('Unsubscribe user accounts from email communication.'),
+      'description' => t('Unsubscribe any account from email communication.'),
     ),
   );
 }
@@ -119,13 +119,15 @@ function unsubscribe_tokens($type, $tokens, array$data = array(), array$options 
 function unsubscribe_form_alter(&$form, &$form_state, $form_id) {
   switch ($form_id) {
     case 'user_profile_form':
-      $form['unsubscribe'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('Unsubscribe from emails'),
-        '#description' => t('Checking this box will unsusbscribe you from all automated email communications.'),
-        '#default_value' => unsubscribe_user_check($form['#user']),
-      );
-      $form['#submit'][] = 'unsubscribe_user_profile_form_submit';
+      if (user_access('unsubscribe')) {
+        $form['unsubscribe'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('Unsubscribe from emails'),
+          '#description' => t('Checking this box will unsusbscribe you from all email communications sent by this site.'),
+          '#default_value' => unsubscribe_user_check($form['#user']),
+        );
+        $form['#submit'][] = 'unsubscribe_user_profile_form_submit';
+      }
       break;
   }
 }
@@ -224,6 +226,8 @@ function unsubscribe_user_delete($account) {
 
 /**
  * Implements hook_user_operations().
+ *
+ * Permissions handled by action_permissions module.
  */
 function unsubscribe_user_operations() {
   $operations = array(
@@ -244,7 +248,7 @@ function unsubscribe_user_operations() {
 /**
  * Bulk add users to unsubscribe list. Used by unsubscribe_user_operations().
  *
- * @param $account
+ * @param $accounts.
  *   An array of user IDs.
  *
  * @return
@@ -288,7 +292,7 @@ function unsubscribe_action_info() {
 }
 
 /**
- * Action function for unsubscribe_add_action.
+ * Action function for unsubscribe_user_add_action.
  *
  * @param $entity
  *   The user object being acted upon.
@@ -300,7 +304,7 @@ function unsubscribe_user_add_action(&$account, $context = array()) {
 }
 
 /**
- * Action function for unsubscribe_remove_action.
+ * Action function for unsubscribe_user_remove_action.
  *
  * @param $entity
  *   The user object being acted upon.

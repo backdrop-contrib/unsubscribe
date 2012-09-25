@@ -26,7 +26,7 @@ function hook_unsubscribe_exemptions_alter(&$exemptions) {
  * You might ask "Why would I need this? I can just implement hook_mail_alter()
  * to modify $message." Well, this hook is always called AFTER exemptions have 
  * been checked, and unsubscribe has done its work. This means that you don't
- * need to worry about module weights.
+ * need to worry about module weights. Maybe it should be ditched?
  *
  * @param array $message
  *   An associative array containing the message to be sent.
