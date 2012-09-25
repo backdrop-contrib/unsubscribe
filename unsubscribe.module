@@ -87,14 +87,14 @@ function unsubscribe_token_info() {
 /**
  * Implements hook_tokens().
  */
-function unsubscribe_tokens($type, $tokens, array$data = array(), array$options = array()) {
+function unsubscribe_tokens($type, $tokens, $data = array(), $options = array()) {
+
   $replacements = array();
   $sanitize = !empty($options['sanitize']);
 
   // User tokens.
   if ($type == 'user' && !empty($data['user'])) {
     $account = $data['user'];
-
     foreach ($tokens as $name => $original) {
       switch ($name) {
         case 'unsubscribe':
@@ -177,7 +177,7 @@ function unsubscribe_mail_alter(&$message) {
       $function($message);
     }
 
-    // Store an unsubscribe link in $message for later theming use.
+    // Store an unsubscribe link in $message array for later theming use.
     $unsubscribe_link = theme('unsubscribe', array('account' => $account));
     $message['unsubscribe'] = $unsubscribe_link;
 
