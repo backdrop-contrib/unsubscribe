@@ -60,7 +60,7 @@ function unsubscribe_unsubscribe_form_validate($form, &$form_state) {
     // Check to see that email address belongs to an existing user.
     if ($account = user_load_by_mail($mail)) {
       // Check to see if this user has already unsubscribed.
-      if (unsubscribe_user_check(array('mail' => $mail))) {
+      if (unsubscribe_user_check($account)) {
         form_set_error('mail', t('The e-mail address that you specified has already been unsubscribed.'));
       }
     }
