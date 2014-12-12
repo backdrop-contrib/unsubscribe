@@ -74,6 +74,7 @@ function unsubscribe_unsubscribe_form_validate($form, &$form_state) {
  * Form submission handler for unsubscribe_unsubscribe_form().
  */
 function unsubscribe_unsubscribe_form_submit($form, &$form_state) {
+  $mail = $form_state['values']['mail'];
   $account = user_load_by_mail($mail);
   unsubscribe_user_add($account->uid);
 }
