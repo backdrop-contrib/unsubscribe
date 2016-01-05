@@ -26,3 +26,17 @@ function unsubscribe_schema() {
   );
   return $schema;
 }
+
+/**
+ * Convert settings from variables to config.
+ */
+function unsubscribe_update_1000() {
+  $config = config('unsubscribe.settings');
+
+  $config->set('append', update_variable_get('unsubscribe_append', 1));
+  $config->set('exempt_modules', update_variable_get('unsubscribe_exempt_modules', backdrop_map_assoc(array('system', 'user'))));
+  update_variable_del('unsubscribe_append');
+  update_variable_del('unsubscribe_exempt_modules');
+
+  $config->save();
+}
