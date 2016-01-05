@@ -97,4 +97,6 @@ function unsubscribe_unsubscribe_form_submit($form, &$form_state) {
   $mail = $form_state['values']['mail'];
   $account = user_load_by_mail($mail);
   unsubscribe_user_add($account->uid);
+
+  backdrop_set_message(t('You have been unsubscribed from email communications.'));
 }
