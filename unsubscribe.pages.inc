@@ -8,10 +8,12 @@
  * Form constructor for unsubscribe settings page.
  */
 function unsubscribe_settings_form($form, &$form_state) {
+  $config = config('unsubscribe.settings');
+
   $form['unsubscribe_append'] = array(
     '#type' => 'checkbox',
     '#title' => t('Append unsubscribe link to all outgoing emails'),
-    '#default_value' => variable_get('unsubscribe_append', 1),
+    '#default_value' => $config->get('append'),
   );
   $form['exemptions'] = array(
     '#type' => 'fieldset',
@@ -21,11 +23,29 @@ function unsubscribe_settings_form($form, &$form_state) {
   $form['exemptions']['unsubscribe_exempt_modules'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Exempt modules'),
-    '#options' => drupal_map_assoc(module_implements('mail')),
-    '#default_value' => variable_get('unsubscribe_exempt_modules', drupal_map_assoc(array('system', 'user'))),
+    '#options' => backdrop_map_assoc(module_implements('mail')),
+    '#default_value' => $config->get('exempt_modules'),
     '#description' => t('Developers: you can programatically alter this list using hook_unsubscribe_exemptions_alter().'),
   );
-  return system_settings_form($form);
+  $form['actions']['#type'] = 'actions';
+  $form['actions']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save configuration'),
+  );
+  return $form;
+}
+
+/**
+ * Submit handler for unsubscribe settings page.
+ */
+function unsubscribe_settings_form_submit($form, &$form_state) {
+  $values = $form_state['values'];
+  $config = config('unsubscribe.settings');
+  $config->set('append', (bool) $values['unsubscribe_append']);
+  $config->set('exempt_modules', $values['unsubscribe_exempt_modules']);
+  $config->save();
+
+  backdrop_set_message('');
 }
 
 /**

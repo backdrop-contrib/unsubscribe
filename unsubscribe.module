@@ -12,7 +12,7 @@ function unsubscribe_menu() {
   $items['unsubscribe'] = array(
     'title' => 'Unsubscribe',
     'description' => 'Unsubscribe from all email notifications',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('unsubscribe_unsubscribe_form'),
     'access arguments' => array('unsubscribe'),
     'file' => 'unsubscribe.pages.inc',
@@ -20,7 +20,7 @@ function unsubscribe_menu() {
   $items['admin/config/people/unsubscribe'] = array(
     'title' => 'Unsubscribe',
     'description' => 'Configure settings for the unsubscribe module.',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('unsubscribe_settings_form'),
     'access arguments' => array('administer site configuration'),
     'file' => 'unsubscribe.pages.inc',
@@ -60,12 +60,23 @@ function unsubscribe_theme() {
 }
 
 /**
+ * Implements hook_config_info().
+ */
+function unsubscribe_config_info() {
+  $prefixes['unsubscribe.settings'] = array(
+    'label' => t('Unsubscribe settings'),
+    'group' => t('Configuration'),
+  );
+  return $prefixes;
+}
+
+/**
  * Implements hook_views_api().
  */
 function unsubscribe_views_api() {
   return array(
     'api' => 3,
-    'path' => drupal_get_path('module', 'unsubscribe'),
+    'path' => backdrop_get_path('module', 'unsubscribe'),
   );
 }
 
@@ -151,6 +162,7 @@ function unsubscribe_user_profile_form_submit($form, &$form_state) {
  */
 function unsubscribe_mail_alter(&$message) {
   static $exemptions, $block;
+  $config = config('unsubscribe.settings');
 
   // We rely on the account parameter being set. Maybe there should be a
   // fallback that checks via user_load_by_mail($message['to'])?
@@ -158,10 +170,10 @@ function unsubscribe_mail_alter(&$message) {
     $account = $message['params']['account'];
 
     // Messages sent by these modules will not be aborted.
-    $exemptions = array_filter(variable_get('unsubscribe_exempt_modules', drupal_map_assoc(array('system', 'user'))), 'is_string');
+    $exemptions = array_filter($config->get('exempt_modules'), 'is_string');
 
     // Allow for $exemptions array to be altered by other modules.
-    drupal_alter('unsubscribe_exemptions', $exemptions);
+    backdrop_alter('unsubscribe_exemptions', $exemptions);
 
     // For non-exempt modules.
     if (!in_array($message['module'], $exemptions)) {
@@ -184,7 +196,7 @@ function unsubscribe_mail_alter(&$message) {
     $message['unsubscribe'] = $unsubscribe_link;
 
     // Append unsubscribe link to email.
-    if (variable_get('unsubscribe_append', 1)) {
+    if ($config->get('append')) {
       $message['body']['unsubscribe'] = $unsubscribe_link;
     }
   }
@@ -268,7 +280,7 @@ function unsubscribe_user_bulk_add_remove($accounts, $action) {
       );
     }
     else {
-      drupal_set_message(t('There was a problem loading account %uid', array('%uid' => $uid)));
+      backdrop_set_message(t('There was a problem loading account %uid', array('%uid' => $uid)));
     }
   }
   return $return;
@@ -380,4 +392,3 @@ function unsubscribe_user_remove($account) {
   // Allow modules to respond to this event.
   module_invoke_all('unsubscribe', $account, 'remove');
 }
-

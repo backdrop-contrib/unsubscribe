@@ -1,0 +1,8 @@
+{
+    "_config_name": "unsubscribe.settings",
+    "append": true,
+    "exempt_modules": {
+        "system": "system",
+        "user": "user"
+    }
+}

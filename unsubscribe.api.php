@@ -53,9 +53,9 @@ function hook_unsubscribe_override(&$message) {
  */
 function hook_unsubscribe($account, $action) {
   if ($action == 'add') {
-    drupal_set_message(t('@mail has been added to the unsubscribe list.', array('@mail' => $account->mail)));
+    backdrop_set_message(t('@mail has been added to the unsubscribe list.', array('@mail' => $account->mail)));
   }
   else {
-    drupal_set_message(t('@mail has been remove from the unsubscribe list.', array('@mail' => $account->mail)));
+    backdrop_set_message(t('@mail has been remove from the unsubscribe list.', array('@mail' => $account->mail)));
   }
 }
