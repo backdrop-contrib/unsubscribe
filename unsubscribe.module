@@ -134,7 +134,7 @@ function unsubscribe_form_alter(&$form, &$form_state, $form_id) {
         $form['unsubscribe'] = array(
           '#type' => 'checkbox',
           '#title' => t('Unsubscribe from emails'),
-          '#description' => t('Checking this box will unsusbscribe you from all email communications sent by this site.'),
+          '#description' => t('Checking this box will unsubscribe you from all email communications sent by this site.'),
           '#default_value' => unsubscribe_user_check($form['#user']),
         );
         $form['#submit'][] = 'unsubscribe_user_profile_form_submit';
