@@ -31,12 +31,16 @@ Theming
 The unsubscribe module allows for the unsubscribe link to me themed
 via theme_unsubscribe().
 
-Support
+License
 -------
-Please use the issue queue for filing bugs with this module at
-http://drupal.org/project/issues/unsubscribe?categories=All
+This project is GPL v2 software. See the LICENSE.txt file in this directory for
+complete text.
 
-Author
+Current Maintainers
+-------------------
+- Dan Boulet (https://github.com/dboulet)
+
+Credits
 -------
-Written by Matthew Grasmick (@madmatter23).
-
+- Ported to Backdrop CMS by Dan Boulet (https://github.com/dboulet).
+- Originally written for Drupal by Matthew Grasmick (https://www.drupal.org/u/grasmash).
