@@ -2,3 +2,4 @@ name = Unsubscribe
 description = Permits users to unsubscribe from email notifications.
 type = module
 backdrop = 1.x
+configure = admin/config/people/unsubscribe
